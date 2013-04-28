@@ -5,7 +5,7 @@ from ..models import DBSession
 
 class ViewBase(object):
     """
-    Base class view all view which provide helpers to manipulate the scope
+    Base class for all views which provide helpers to manipulate the scope
     and other stuff.
     """
 
