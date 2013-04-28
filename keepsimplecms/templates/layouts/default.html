@@ -1,0 +1,17 @@
+<!doctype html>
+<!--[if IE 7 ]>      <html class="no-js ie ie7 lte7 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>      <html class="no-js ie ie8 lte8 lte9" lang="en-US"> <![endif]-->
+<!--[if IE 9 ]>      <html class="no-js ie ie9 lte9>" lang="en-US"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+    <head>
+        <title>{{ page_title }}</title>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+        <meta name="keywords" content="" />
+        <meta name="description" content="" />
+        <link rel="shortcut icon" href="{{ request.static_url('keepsimplecms:static/favicon.ico') }}" />
+        <link rel="stylesheet" href="{{ request.static_url('keepsimplecms:static/global.css') }}" type="text/css" media="screen" charset="utf-8" />
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+    </body>
+</html>

@@ -20,9 +20,15 @@ def main(global_config, **settings):
     config.add_renderer('.html', renderer_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
 
+
     config.add_route(u'home', u'/',)
     config.add_view(u'keepsimplecms.views.home.Home',
                     route_name=u'home',
+                    renderer=u'templates/index.html')
+
+    config.add_route(u'test', u'/test',)
+    config.add_view(u'keepsimplecms.views.home.Test',
+                    route_name=u'test',
                     renderer=u'templates/index.html')
 
     config.scan()

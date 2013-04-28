@@ -10,11 +10,9 @@ class ViewBase(object):
     """
 
     # the scope is the dict sent to the template engine
-    _scope = {
-        'page_title': 'Sample title'
-    }
+    _scope = {}
 
-    def __init__(self, request):
+    def __init__(self, request=None):
         self.request = request
         self.session = DBSession()
 
@@ -50,8 +48,27 @@ class ViewBase(object):
 
 class View(ViewBase):
     """
-    An another layer between the base and the view.
-    Empty for the moment.
+    Define the default variables in the scope.
     """
-    pass
+    _scope = {
+        'layout': 'layouts/default.html',
+        'page_title': 'Sample title'
+    }
 
+
+class Node(ViewBase):
+    """
+    Define a node which is a ViewBase object which is able to render itself.
+    Since no view declaration is done for these objects, every child nodes must
+    define a template.
+    """
+    template = None
+
+    def __call__(self):
+        self.render()
+
+        if not self.template:
+            return ''
+
+        from pyramid.renderers import render
+        return render(self.template, self._scope, self.request)
