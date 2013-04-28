@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nosetests --cover-package=tutorial --cover-erase --with-coverage
