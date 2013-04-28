@@ -1,5 +1,5 @@
-from pyramid.view import view_config
+from .base import View
 
-@view_config(route_name='home', renderer='../templates/mytemplate.pt')
-def my_view(request):
-    return {'project': 'keepsimple.cms'}
+class Home(View):
+    def render(self):
+        self.scope('foo', 'bar')
