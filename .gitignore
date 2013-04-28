@@ -32,3 +32,6 @@ nosetests.xml
 # Mr Developer
 .project
 .pydevproject
+
+# egg
+keepsimple.cms.egg-info
