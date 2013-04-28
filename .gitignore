@@ -33,5 +33,6 @@ nosetests.xml
 .project
 .pydevproject
 
-# egg
+# setup.py files
 keepsimple.cms.egg-info
+dist
