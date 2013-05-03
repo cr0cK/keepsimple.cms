@@ -5,20 +5,22 @@ from ..models import DBSession
 
 class ViewBase(object):
     """
-    Base class for all views which provide helpers to manipulate the scope
-    and other stuff.
+    Base class for all views and nodes.
     """
 
     # the scope is the dict sent to the template engine
     _scope = {}
 
     def __init__(self, request=None):
+        """
+        Save a reference to the Pyramid request object and :py:class:DBSession.
+        """
         self.request = request
         self.session = DBSession()
 
     def __call__(self):
         """
-        Return the scope to render the template.
+        Make the class as a callable function witch can be rendered.
         """
         self.render()
         return self._scope
@@ -41,9 +43,17 @@ class ViewBase(object):
     def render(self):
         """
         Set variables to the scope before rendering.
+
         To be extended by the view.
         """
         pass
+
+    def node(self, node):
+        """
+        Instanciate the :py:class:`Node` `node` and return its html code.
+        """
+        return node(self.request)()
+
 
 
 class View(ViewBase):
@@ -51,16 +61,24 @@ class View(ViewBase):
     Define the default variables in the scope.
     """
     _scope = {
-        'layout': 'layouts/default.html',
+        'layout': 'templates/layouts/default.html',
         'page_title': 'Sample title'
     }
 
 
 class Node(ViewBase):
     """
-    Define a node which is a ViewBase object which is able to render itself.
-    Since no view declaration is done for these objects, every child nodes must
-    define a template.
+    A node is a ViewBase child which is not declared as a view. Therefore, a
+    node is not mapped to an URL.
+
+    A node represents a part of the HTML page and implements its own logic since
+    the request and the DBSession objects are available.
+
+    The page is build from several nodes, each ones should be independant and
+    can be reused in different views.
+
+    Since no view and route declaration is done for a node, a template must be
+    declared.
     """
     template = None
 
