@@ -17,6 +17,9 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+keepsimple.cms.egg-info
+dist
+docs
 
 # Installer logs
 pip-log.txt
@@ -32,7 +35,3 @@ nosetests.xml
 # Mr Developer
 .project
 .pydevproject
-
-# setup.py files
-keepsimple.cms.egg-info
-dist
