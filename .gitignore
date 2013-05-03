@@ -21,6 +21,9 @@ keepsimple.cms.egg-info
 dist
 docs
 
+# Compass
+.sass-cache
+
 # Installer logs
 pip-log.txt
 
