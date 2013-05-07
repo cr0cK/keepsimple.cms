@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class ViewBase(object):
     """
     Base class for all views and nodes.
@@ -16,7 +18,8 @@ class ViewBase(object):
 
     def __call__(self):
         """
-        Make the class as a callable function witch can be rendered.
+        Make the class as a callable function.
+        Return the scope.
         """
         self.render()
         return self._scope
@@ -44,11 +47,12 @@ class ViewBase(object):
         """
         pass
 
-    def node(self, node):
+    def node(self, node, values=None):
         """
-        Instanciate the :py:class:`Node` `node` and return its html code.
+        Instanciate the :py:class:`Node` `node` with optional `values`
+        and return its html code.
         """
-        return node(self._request)()
+        return node(request=self._request, values=values)()
 
 
 
@@ -78,7 +82,19 @@ class Node(ViewBase):
     """
     _template = None
 
+    def __init__(self, request=None, values=None):
+        """
+        Save a reference to the Pyramid request object and merge optionnal
+        values in the scope.
+        """
+        self._request = request
+        if values:
+            self.scope(values)
+
     def __call__(self):
+        """
+        Render the node from the template and scope values and return HTML.
+        """
         self.render()
 
         if not self._template:
