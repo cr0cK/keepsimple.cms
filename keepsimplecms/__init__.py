@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import logging
+log = logging.getLogger(__name__)
+
+
 class ViewBase(object):
     """
     Base class for all views and nodes.
@@ -15,14 +19,15 @@ class ViewBase(object):
         Save a reference to the Pyramid request object.
         """
         self._request = request
+        self._scope = {}
+        self._init()
 
-    def __call__(self):
+    def _init(self):
         """
-        Make the class as a callable function.
-        Return the scope.
+        Post init function.
+        Useful to set default values in the scope in sub classes.
         """
-        self.render()
-        return self._scope
+        pass
 
     def scope(self, *arg):
         """
@@ -47,23 +52,33 @@ class ViewBase(object):
         """
         pass
 
-    def node(self, node, values=None):
+    def node(self, node_class, values=None):
         """
         Instanciate the :py:class:`Node` `node` with optional `values`
         and return its html code.
         """
-        return node(request=self._request, values=values)()
+        node = node_class(request=self._request, values=values)
+        node.scope('_node', type(self))
+        return node()
 
+    def __call__(self):
+        """
+        Make the class as a callable function.
+        Return the scope.
+        """
+        self.render()
+        return self._scope
 
 
 class View(ViewBase):
     """
     Define the default variables in the scope.
     """
-    _scope = {
-        'layout': 'templates/layouts/default.html',
-        'page_title': 'Sample title'
-    }
+    def _init(self):
+        self.scope({
+            'layout': 'templates/layouts/default.html',
+            'page_title': 'Sample title',
+        })
 
 
 class Node(ViewBase):
@@ -87,7 +102,7 @@ class Node(ViewBase):
         Save a reference to the Pyramid request object and merge optionnal
         values in the scope.
         """
-        self._request = request
+        super(Node, self).__init__(request=request)
         if values:
             self.scope(values)
 
@@ -102,3 +117,25 @@ class Node(ViewBase):
 
         from pyramid.renderers import render
         return render(self._template, self._scope, self._request)
+
+
+# class NodePlaceHolder(object):
+#     _nodes = {}
+#
+#     @classmethod
+#     def save(self, node_name, node_object):
+#         """
+#         ...
+#         """
+#         # @TODO check node type ?
+#         self._nodes[node_name] = node_object
+#
+#     def __call__(self, node_name):
+#         """
+#         ...
+#         """
+#         if not self._nodes.has_key(node_name):
+#             log.error('The node %s has not been found.', node_name)
+#
+#         return self._nodes.get(node_name, Node())
+
