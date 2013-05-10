@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from jinja2 import Environment
 from jinja2.utils import Markup
 from pprint import pformat
 import sys
 import types
 
 
-def global_node(node_value):
+env = Environment()
+
+
+def global_node(node_value, indent=0, indent_first=False):
     """
-    Used for the inclusion of a node in a template.
-    It just marks the node value `node_value` as safe.
+    Used for the inclusion of a node in a template by indenting and flagging
+    the HTML string as safe.
     """
-    return Markup(node_value)
+    spaces = indent * 4
+    tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
+    return Markup(tmpl.render(node_value=node_value))
 
 def global_dump(value):
     """
