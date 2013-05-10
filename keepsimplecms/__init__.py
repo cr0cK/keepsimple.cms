@@ -3,14 +3,18 @@
 import logging
 log = logging.getLogger(__name__)
 
+from pyramid.renderers import render, render_to_response
 
-class ViewBase(object):
+
+class View(object):
     """
     Base class for all views and nodes.
     """
 
     # database session
     _session = None
+    # the template used for the rendering
+    _template = None
     # the scope is the dict sent to the template engine
     _scope = {}
 
@@ -57,7 +61,8 @@ class ViewBase(object):
         Instanciate the :py:class:`Node` `node` with optional `values`
         and return its html code.
         """
-        node = node_class(request=self._request, values=values)
+        node = node_class(request=self._request, session=self._session,
+            values=values)
         node.scope('_node', type(self))
         return node()
 
@@ -67,23 +72,12 @@ class ViewBase(object):
         Return the scope.
         """
         self.render()
-        return self._scope
+        return render_to_response(self._template, self._scope, request=self._request)
 
 
-class View(ViewBase):
+class Node(View):
     """
-    Define the default variables in the scope.
-    """
-    def _init(self):
-        self.scope({
-            'layout': 'templates/layouts/default.html',
-            'page_title': 'Sample title',
-        })
-
-
-class Node(ViewBase):
-    """
-    A node is a ViewBase child which is not declared as a view. Therefore, a
+    A node is a View child which is not declared as a view. Therefore, a
     node is not mapped to an URL.
 
     A node represents a part of the HTML page and implements its own logic since
@@ -95,14 +89,15 @@ class Node(ViewBase):
     Since no view and route declaration is done for a node, a template must be
     declared.
     """
-    _template = None
 
-    def __init__(self, request=None, values=None):
+    def __init__(self, request=None, session=None, values=None):
         """
-        Save a reference to the Pyramid request object and merge optionnal
+        Save a reference to the Pyramid request object,
+        a reference to the DB session and merge optionnal
         values in the scope.
         """
         super(Node, self).__init__(request=request)
+        self._session = session
         if values:
             self.scope(values)
 
@@ -115,7 +110,6 @@ class Node(ViewBase):
         if not self._template:
             return ''
 
-        from pyramid.renderers import render
         return render(self._template, self._scope, self._request)
 
 
