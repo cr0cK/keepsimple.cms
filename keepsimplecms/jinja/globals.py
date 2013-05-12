@@ -15,6 +15,9 @@ def global_node(node_value, indent=0, indent_first=False):
     Used for the inclusion of a node in a template by indenting and flagging
     the HTML string as safe.
     """
+    if not node_value:
+        return
+
     spaces = indent * 4
     tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
     return Markup(tmpl.render(node_value=node_value))

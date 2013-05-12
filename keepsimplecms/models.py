@@ -2,8 +2,9 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
-    Text,
-    String
+    UnicodeText,
+    String,
+    Enum
 )
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,7 +19,7 @@ class Route(Base):
     __tablename__ = 'route'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100))
+    name = Column(String(100), unique=True)
     pattern = Column(String(200))
     view = Column(String(200))
 
@@ -32,11 +33,13 @@ class Node(Base):
     __tablename__ = 'node'
 
     id = Column(Integer, primary_key=True)
-    type = Column(String(100))
+    name = Column(String(200), unique=True)
+    type = Column(Enum('view', 'node'))
     template = Column(String(200))
-    values = relationship("NodeValue", backref="values")
+    values = relationship("NodeValue", backref="node")
 
-    def __init__(self, type, template=None):
+    def __init__(self, name, type, template):
+        self.name = name
         self.type = type
         self.template = template
 
@@ -45,10 +48,24 @@ class NodeValue(Base):
     __tablename__ = 'node_value'
 
     id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, ForeignKey('node.id'))
     key = Column(String(100))
-    value = Column(Text)
+    value = Column(UnicodeText())
+    value_type_id = Column(Integer, ForeignKey('value_type.id'))
+    node_id = Column(Integer, ForeignKey('node.id'))
 
-    def __init__(self, name, value):
-        self.name = name
+    def __init__(self, key, value, value_type_id, node_id):
+        self.key = key
         self.value = value
+        self.value_type_id = value_type_id
+        self.node_id = node_id
+
+
+class ValueType(Base):
+    __tablename__ = 'value_type'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100))
+    values = relationship("NodeValue", backref="type")
+
+    def __init__(self, name):
+        self.name = name

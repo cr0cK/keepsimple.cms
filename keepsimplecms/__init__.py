@@ -5,25 +5,41 @@ log = logging.getLogger(__name__)
 
 from pyramid.renderers import render, render_to_response
 
+from keepsimplecms.models import Node as NodeModel
+
 
 class View(object):
     """
     Base class for all views and nodes.
     """
 
+    _request = None
+    _context = None
     # database session
     _session = None
-    # the template used for the rendering
+    # template used for the rendering
     _template = None
-    # the scope is the dict sent to the template engine
+    # dict sent to the template engine
     _scope = {}
 
-    def __init__(self, request=None):
+    def __init__(self, request=None, session=None, template=None, values=None):
         """
         Save a reference to the Pyramid request object.
         """
-        self._request = request
+        self._session = session
+        self._template = template
+
+        # save values
         self._scope = {}
+        for value_ in values:
+            key = value_.key
+            value = value_.value
+
+            if value_.type.name == 'node':
+                key = '_' + key
+
+            self.scope(key, value)
+
         self._init()
 
     def _init(self):
@@ -35,7 +51,7 @@ class View(object):
 
     def scope(self, *arg):
         """
-        Getter/setter to the scope.
+        Get or set values in the scope.
         """
         # return a value from the scope
         if len(arg) == 1 and isinstance(arg[0], str):
@@ -54,24 +70,35 @@ class View(object):
 
         To be extended by the view.
         """
-        pass
+        for k, v in self._scope.items():
+            if k.startswith('_'):
+                scope_variable = k[1:]
+                node_name = v
 
-    def node(self, node_class, values=None):
-        """
-        Instanciate the :py:class:`Node` `node` with optional `values`
-        and return its html code.
-        """
-        node = node_class(request=self._request, session=self._session,
-            values=values)
-        node.scope('_node', type(self))
-        return node()
+                # retrieve the node
+                node = self._session.query(NodeModel).filter(
+                    NodeModel.name == node_name).first()
 
-    def __call__(self):
+                if not node:
+                    self._scope[scope_variable] = ('Node %s not found'
+                        % node_name)
+                else:
+                    self._scope[scope_variable] = Node(
+                        request=self._request, session=self._session,
+                        template=node.template, values=node.values)()
+
+    def __call__(self, context=None, request=None):
         """
         Make the class as a callable function.
         Return the scope.
         """
+        if request:
+            self._request = request
+        if context:
+            self._context = context
+
         self.render()
+
         return render_to_response(self._template, self._scope, request=self._request)
 
 
@@ -89,18 +116,6 @@ class Node(View):
     Since no view and route declaration is done for a node, a template must be
     declared.
     """
-
-    def __init__(self, request=None, session=None, values=None):
-        """
-        Save a reference to the Pyramid request object,
-        a reference to the DB session and merge optionnal
-        values in the scope.
-        """
-        super(Node, self).__init__(request=request)
-        self._session = session
-        if values:
-            self.scope(values)
-
     def __call__(self):
         """
         Render the node from the template and scope values and return HTML.
@@ -111,25 +126,3 @@ class Node(View):
             return ''
 
         return render(self._template, self._scope, self._request)
-
-
-# class NodePlaceHolder(object):
-#     _nodes = {}
-#
-#     @classmethod
-#     def save(self, node_name, node_object):
-#         """
-#         ...
-#         """
-#         # @TODO check node type ?
-#         self._nodes[node_name] = node_object
-#
-#     def __call__(self, node_name):
-#         """
-#         ...
-#         """
-#         if not self._nodes.has_key(node_name):
-#             log.error('The node %s has not been found.', node_name)
-#
-#         return self._nodes.get(node_name, Node())
-
