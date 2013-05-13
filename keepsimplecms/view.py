@@ -125,8 +125,8 @@ class View(object):
 
     def render(self):
         """
-        Render each nodes saved as private attribute in the scope and saved HTML
-        code as new attributes.
+        Render each nodes saved as private attributes in the scope and save the
+        rendering of nodes in new attributes.
         """
         self._render()
 
@@ -145,16 +145,18 @@ class View(object):
                 self._scope[scope_variable] = ('Node %s not found'
                     % node_name)
             else:
-#                 type = node.type
-#                 if '.' in type:
-#                     from pprint import pprint
-#                     pprint(type)
-#                     importlib.import_module(type)
+                type_ = node.type
 
-                # temp
-                from aikido.views.news import Posts2
+                # load dynamically the module and instanciate the node class
+                if '.' in type_:
+                    parts = type_.split('.')
+                    class_node = parts.pop()
+                    module_path = '.'.join(parts)
+                    mod = importlib.import_module(module_path)
+                    class_node = getattr(mod, class_node)
+                else:
+                    class_node = eval(type_)
 
-                class_node = eval(node.type)
                 html = class_node(request=self._request, session=self._session,
                     template=node.template, values=node.values)()
                 self.scope(scope_variable, html)
