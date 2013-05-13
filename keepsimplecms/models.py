@@ -4,7 +4,6 @@ from sqlalchemy import (
     Integer,
     UnicodeText,
     String,
-    Enum
 )
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -34,7 +33,7 @@ class Node(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), unique=True)
-    type = Column(Enum('view', 'node'))
+    type = Column(String(100))
     template = Column(String(200))
     values = relationship("NodeValue", backref="node")
 
