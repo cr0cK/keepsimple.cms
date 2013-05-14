@@ -82,6 +82,8 @@ class View(object):
 
           @TODO
         """
+        if request:
+            self._request = request
         if session:
             self._session = session
         if template:
@@ -160,6 +162,9 @@ class View(object):
                 html = class_node(request=self._request, session=self._session,
                     template=node.template, values=node.values)()
                 self.scope(scope_variable, html)
+
+        # save the request object in the scope
+        self.scope('request', self._request)
 
     def _render(self):
         """
