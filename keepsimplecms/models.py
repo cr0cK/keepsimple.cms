@@ -32,7 +32,7 @@ class Node(Base):
     __tablename__ = 'node'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(200), unique=True)
+    name = Column(String(200), index=True)
     type = Column(String(100))
     template = Column(String(200))
     values = relationship("NodeValue", backref="node")
