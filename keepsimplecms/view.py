@@ -4,6 +4,7 @@ import logging
 log = logging.getLogger(__name__)
 
 import importlib
+import inspect
 
 from pyramid.renderers import render as render_to_html, render_to_response
 
@@ -14,6 +15,10 @@ class View(object):
     """
     Callable object which represents a view for a route and used as the base
     class for every node.
+
+    _name
+
+      Name of the view.
 
     _request
 
@@ -42,21 +47,23 @@ class View(object):
       See :meth:`scope` to get and set values.
 
     """
-    _request = None
-    _context = None
-    # database session
-    _session = None
-    # template used for the rendering
+    _name     = None
+    _request  = None
+    _context  = None
+    _session  = None
     _template = None
-    # dict sent to the template
-    _scope = {}
+    _scope    = {}
 
-    def __init__(self, request=None, session=None, template=None, values=None,
-        scope=None):
+    def __init__(self, name=None, request=None, session=None, template=None,
+        values=None, scope=None):
         """
         Create a new :class:`View`.
 
         Save references to differents objects.
+
+        name
+
+          Name of the view (or the Node).
 
         request
 
@@ -82,6 +89,8 @@ class View(object):
 
           @TODO
         """
+        if name:
+            self._name = name
         if request:
             self._request = request
         if session:
@@ -132,6 +141,7 @@ class View(object):
         """
         self._render()
 
+        # instanciate private attributes to nodes
         for k, v in self._scope.items():
             if not k.startswith('_'):
                 continue
@@ -173,11 +183,39 @@ class View(object):
         """
         pass
 
-    def node(self, Node, scope=None):
+    def node(self, name=None, values=None, scope=None):
         """
         Instanciate a node with an optionnal scope and return the HTML code.
+        It's possible to pass either a class or a string as the node name,
+        depending if the node is a custom implementation or is the generic
+        Node object.
+        For the two cases, node values are retrieved from the DB.
+
+        name
+
+          Name of a node (Class which extends :class:`Node` or a string)
+
+        scope
+
+          Scope to load in the node.
+
         """
-        return Node(request=self._request, session=self._session, scope=scope)()
+        # try to guess the name and the type of the node
+        if inspect.isclass(name):
+            node_name = name.__class__.__name__
+            node_type = name
+        else:
+            node_name = name
+            node_type = Node
+
+        # if no values has been passed, retrieve them
+        if values is None:
+            node = self._session.query(NodeModel).filter(
+                    NodeModel.name == node_name).first()
+            values = node.values if node else None
+
+        return node_type(name=node_name, request=self._request,
+            session=self._session, values=values, scope=scope)()
 
     def __call__(self, context=None, request=None):
         """
@@ -219,7 +257,16 @@ class Node(View):
         """
         self.render()
 
+        # if no template has been defined, try to find it
         if not self._template:
-            return 'Node "%s" has no template.' % self.__class__.__name__
+            node_name = self._name or self.__class__.__name__
+            node = self._session.query(NodeModel).filter(
+                NodeModel.name == node_name).first()
+
+            if node:
+                self._template = node.template
+
+            if not self._template:
+                return 'Node "%s" has no template.' % node_name
 
         return render_to_html(self._template, self._scope, self._request)
