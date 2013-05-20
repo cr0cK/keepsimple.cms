@@ -7,8 +7,12 @@ def declare_routes(DBSession, config):
     # create views
     views = {}
     for node in nodes:
-        views[node.name] = View(session=DBSession, template=node.template,
-            values=node.values)
+        views[node.name] = View.create(
+            name=node.name,
+            session=DBSession,
+            template=node.template,
+            values=node.values
+        )
 
     # add routes
     for route in DBSession.query(Route).all():
