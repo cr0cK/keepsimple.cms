@@ -18,9 +18,15 @@ def global_node(node_value, indent=0, indent_first=False):
     if not node_value:
         return
 
-    spaces = indent * 4
-    tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
-    return Markup(tmpl.render(node_value=node_value))
+    try:
+        spaces = indent * 4
+        tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
+        html = tmpl.render(node_value=node_value)
+    except AttributeError:
+        html = node_value
+
+    return Markup(html)
+
 
 def global_dump(value):
     """
