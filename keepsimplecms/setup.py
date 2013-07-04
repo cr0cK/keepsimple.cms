@@ -1,3 +1,5 @@
+import re
+
 from keepsimplecms.models import Route, View as ViewModel
 from keepsimplecms.view import View
 
@@ -9,9 +11,9 @@ def declare_routes(DBSession, config):
     for view in views:
         indexed_views[view.name] = View.create(
             name=view.name,
-            session=DBSession,
             template=view.template,
-            values=view.values
+            values=view.values,
+            session=DBSession,
         )
 
     # add routes
@@ -21,3 +23,33 @@ def declare_routes(DBSession, config):
             pattern=route.pattern,
             view=indexed_views[route.view]
         )
+
+    ### Declare Backoffice views and routes
+
+    backoffice_views = {
+        'BackOfficeHome': {
+            'type': 'View',
+            'template': 'templates/views/backoffice/home.html',
+            'pattern': '/backoffice'
+        }
+    }
+
+    for name, params in backoffice_views.items():
+        indexed_views[name] = View.create(
+            name=name,
+            template=params['template'],
+            scope={'layout': 'templates/layouts/backoffice/base.html'},
+            session=DBSession,
+        )
+
+        # split on upper case chars
+        route_name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
+
+        config.add_route(
+            route_name,
+            pattern=params['pattern'],
+            view=indexed_views[name]
+        )
+
+        config.add_static_view('static/backoffice', 'backoffice:static/backoffice', cache_max_age=3600)
+

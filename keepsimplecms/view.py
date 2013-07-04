@@ -194,7 +194,7 @@ class View(object):
             cls._placeholder['session'] = session
 
         # save values from the model into the scope
-        scope = {}
+        scope = scope or {}
         if values:
             for value_ in values:
                 key = value_.key
