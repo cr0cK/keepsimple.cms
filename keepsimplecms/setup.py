@@ -1,17 +1,17 @@
-from keepsimplecms.models import Route, Node
+from keepsimplecms.models import Route, View as ViewModel
 from keepsimplecms.view import View
 
 def declare_routes(DBSession, config):
-    nodes = DBSession.query(Node).filter(Node.type == 'view').all()
+    views = DBSession.query(ViewModel).filter(ViewModel.type == 'View').all()
 
     # create views
-    views = {}
-    for node in nodes:
-        views[node.name] = View.create(
-            name=node.name,
+    indexed_views = {}
+    for view in views:
+        indexed_views[view.name] = View.create(
+            name=view.name,
             session=DBSession,
-            template=node.template,
-            values=node.values
+            template=view.template,
+            values=view.values
         )
 
     # add routes
@@ -19,5 +19,5 @@ def declare_routes(DBSession, config):
         config.add_route(
             route.name,
             pattern=route.pattern,
-            view=views[route.view]
+            view=indexed_views[route.view]
         )

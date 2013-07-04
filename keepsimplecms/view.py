@@ -7,7 +7,7 @@ import importlib
 
 from pyramid.renderers import render as render_to_html, render_to_response
 
-from keepsimplecms.models import Node as NodeModel
+from keepsimplecms.models import View as ViewModel
 
 
 def dynamic_import(class_name):
@@ -39,7 +39,7 @@ def dynamic_import(class_name):
 class View(object):
     """
     Callable object which represents a view for a route and used as the base
-    class for every node.
+    class for every view.
 
     name
 
@@ -48,7 +48,7 @@ class View(object):
     template
 
       Path to the template used for the rendering.
-      The template is an attribute of the :class:`keepsimplecms.models.Node`
+      The template is an attribute of the :class:`keepsimplecms.models.View`
       model class.
 
     _scope
@@ -141,10 +141,10 @@ class View(object):
 
             scope_variable = attribute[1:]
 
-            # retrieve the node
-            node_model = self.session.query(NodeModel).filter(
-                NodeModel.name == node_name).first()
-            node = Node.create_from_model(node_model)
+            # retrieve the views
+            view_model = self.session.query(ViewModel).filter(
+                ViewModel.name == node_name).first()
+            node = Node.create_from_model(view_model)
 
             # save the node content in the scope
             self.scope(scope_variable, node())

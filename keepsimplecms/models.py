@@ -28,14 +28,14 @@ class Route(Base):
         self.view = view
 
 
-class Node(Base):
-    __tablename__ = 'node'
+class View(Base):
+    __tablename__ = 'view'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), index=True)
     type = Column(String(100))
     template = Column(String(200))
-    values = relationship("NodeValue", backref="node")
+    values = relationship("ViewValue", backref="view")
 
     def __init__(self, name, type, template):
         self.name = name
@@ -43,20 +43,20 @@ class Node(Base):
         self.template = template
 
 
-class NodeValue(Base):
-    __tablename__ = 'node_value'
+class ViewValue(Base):
+    __tablename__ = 'view_value'
 
     id = Column(Integer, primary_key=True)
     key = Column(String(100))
     value = Column(UnicodeText())
     value_type_id = Column(Integer, ForeignKey('value_type.id'))
-    node_id = Column(Integer, ForeignKey('node.id'))
+    view_id = Column(Integer, ForeignKey('view.id'))
 
-    def __init__(self, key, value, value_type_id, node_id):
+    def __init__(self, key, value, value_type_id, view_id):
         self.key = key
         self.value = value
         self.value_type_id = value_type_id
-        self.node_id = node_id
+        self.view_id = view_id
 
 
 class ValueType(Base):
@@ -64,7 +64,7 @@ class ValueType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100))
-    values = relationship("NodeValue", backref="type")
+    values = relationship("ViewValue", backref="type")
 
     def __init__(self, name):
         self.name = name
