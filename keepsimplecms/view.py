@@ -5,7 +5,9 @@ log = logging.getLogger(__name__)
 
 import importlib
 
-from pyramid.renderers import render as render_to_html, render_to_response
+from pyramid.renderers import (render as py_render,
+                              render_to_response as py_render_to_response)
+from pyramid.url import route_url as py_route_url
 
 from keepsimplecms.models import View as ViewModel
 
@@ -36,14 +38,22 @@ def dynamic_import(class_name):
     return klass
 
 
-class View(object):
+class Node(object):
     """
-    Callable object which represents a view for a route and used as the base
-    class for every view.
+    A :class:`Node` is a callable object used as a view for Pyramid, which represents
+    a part (a block or a node or whatever you want) of an HTML page.
+
+    A node represents a part of the HTML page and implements its own logic since
+    the request and the DB session objects are available.
+
+    A page is build from several nodes, each ones should be independant and
+    should be reusable in different views.
+
+    A node is a callable object and return HTML code.
 
     name
 
-      Name of the view.
+      Name of the node.
 
     template
 
@@ -58,8 +68,7 @@ class View(object):
 
     _placeholder
 
-      Dictionary passed from View to Nodes used to store context, request and
-      session objects.
+      Dictionary used to store context, request and session objects.
 
     """
     name         = None
@@ -69,11 +78,11 @@ class View(object):
 
     def __init__(self, name, template, scope=None):
         """
-        Create a new :class:`View`.
+        Create a new :class:`Node`.
 
         name
 
-          Name of the view.
+          Name of the node.
 
         template
 
@@ -131,7 +140,7 @@ class View(object):
 
     def render(self):
         """
-        Render all nodes of the view saved as private attributes of the scope.
+        Render all nodes saved as private attributes in the scope.
 
         """
         def _render(node_name):
@@ -154,7 +163,23 @@ class View(object):
             else:
                 self.scope(key, _render(node_name))
 
+        self._register_methods_in_scope()
         self._render()
+
+    def route_url(self, route_name, *elements, **kw):
+        """
+        Return an url of a route.
+
+        """
+        return py_route_url(route_name, self.request, *elements, **kw)
+
+    def _register_methods_in_scope(self):
+        """
+        Register methods of the node into the scope.
+
+        """
+        # url generating
+        self.scope('route_url', self.route_url)
 
     def _render(self):
         """
@@ -164,34 +189,23 @@ class View(object):
         """
         pass
 
-    def __call__(self, context=None, request=None):
+    def __call__(self):
         """
-        Make the class as a callable function.
-        Called by Pyramid when this object is used as a view.
-
-        The Pyramid context and request object are pass by Pyramid and saved
-        in the placeholder area.
-
-        Return a Pyramid response object.
+        Render the node from the template and scope attributes.
 
         """
-        self._placeholder['context'] = context
-        self._placeholder['request'] = request
-
         self.render()
-
-        return render_to_response(self.template, self.scope(),
-            request=self.request)
+        return py_render(self.template, self.scope(), self.request)
 
     @classmethod
     def create(cls, name, template, values=None, scope=None, session=None):
         """
-        Create a view.
+        Create a :class:`Node`.
 
-        Values which are node type are saved as private attributes in the scope.
-        While rendering, these attributes will be instanciated to nodes.
+        Values of :class:`Node` type are saved as private attributes in the scope.
+        While rendering, these attributes will be instanciated to :class:`Node`.
 
-        Since nodes are views, the same things happen for nodes which allows to
+        Since Views are nodes, the same things happen for views which allows to
         build the entire page.
 
         """
@@ -223,29 +237,6 @@ class View(object):
             scope=scope,
         )
 
-
-class Node(View):
-    """
-    Extend a :class:`View` to create a node.
-
-    A node represents a part of the HTML page and implements its own logic since
-    the request and the DB session objects are available.
-
-    A page is build from several nodes, each ones should be independant and
-    should be reusable in different views.
-
-    A node is a callable object and return HTML code.
-
-    """
-    def __call__(self):
-        """
-        Render the node from the template and scope attributes and return HTML.
-
-        """
-        self.render()
-
-        return render_to_html(self.template, self.scope(), self.request)
-
     @classmethod
     def create_from_model(cls, node_model):
         """
@@ -259,3 +250,28 @@ class Node(View):
             template=node_model.template,
             values=node_model.values,
         )
+
+
+class View(Node):
+    """
+    Extend a :class:`Node` to create a view.
+
+    """
+    def __call__(self, context=None, request=None):
+        """
+        Make the class as a callable function.
+        Called by Pyramid when this object is used as a view.
+
+        The Pyramid context and request object are pass by Pyramid and saved
+        in the placeholder area.
+
+        Return a Pyramid response object.
+
+        """
+        self._placeholder['context'] = context
+        self._placeholder['request'] = request
+
+        self.render()
+
+        return py_render_to_response(self.template, self.scope(),
+            request=self.request)
