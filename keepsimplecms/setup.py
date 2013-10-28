@@ -2,6 +2,8 @@ import re
 
 from keepsimplecms.models import Route, View as ViewModel
 from keepsimplecms.view import View
+from keepsimplecms.exceptions import SetupException
+
 
 def declare_routes(DBSession, config):
     # retrieve routes
@@ -25,6 +27,11 @@ def declare_routes(DBSession, config):
 
     # add routes
     for route in DBSession.query(Route).all():
+        try:
+            view = indexed_views[route.view]
+        except KeyError, e:
+            raise SetupException('The view %s has not been found.' % route.view)
+
         config.add_route(
             route.name,
             pattern=route.pattern,
