@@ -12,20 +12,28 @@ env = Environment()
 
 def global_node(node_value, indent=0, indent_first=False):
     """
-    Used for the inclusion of a node in a template by indenting and flagging
-    the HTML string as safe.
+    Used for the inclusion of a node (or several nodes) in a template by
+    indenting and flagging the HTML string as safe.
     """
     if not node_value:
         return
 
-    try:
-        spaces = indent * 4
-        tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
-        html = tmpl.render(node_value=node_value)
-    except AttributeError:
-        html = node_value
+    def render(node_value):
+        try:
+            spaces = indent * 4
+            tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
+            html = tmpl.render(node_value=node_value)
+        except AttributeError:
+            html = node_value
+        return html
 
-    return Markup(html)
+    htmls = []
+    if isinstance(node_value, list):
+        htmls = [render(node) for node in node_value]
+    else:
+        htmls = [render(node_value)]
+
+    return Markup(''.join(htmls))
 
 
 def global_dump(value):

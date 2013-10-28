@@ -134,20 +134,25 @@ class View(object):
         Render all nodes of the view saved as private attributes of the scope.
 
         """
-        # instanciate private attributes to nodes
-        for attribute, node_name in self.scope().items():
-            if not attribute.startswith('_'):
-                continue
-
-            scope_variable = attribute[1:]
-
+        def _render(node_name):
             # retrieve the views
             view_model = self.session.query(ViewModel).filter(
                 ViewModel.name == node_name).first()
-            node = Node.create_from_model(view_model)
 
             # save the node content in the scope
-            self.scope(scope_variable, node())
+            return Node.create_from_model(view_model)()
+
+        # instanciate private attributes to nodes
+        for attribute, node_name in self.scope().items():
+            # if the attribute is not private, continue
+            if not attribute.startswith('_'):
+                continue
+
+            key = attribute[1:]
+            if isinstance(node_name, list):
+                self.scope(key, [_render(node) for node in node_name])
+            else:
+                self.scope(key, _render(node_name))
 
         self._render()
 
@@ -203,7 +208,14 @@ class View(object):
                 if value_.type.name == 'node':
                     key = '_' + key
 
-                scope[key] = value
+                # if the key is already defined, append value into a list
+                if key in scope:
+                    if isinstance(scope[key], list):
+                        scope[key].append(value)
+                    else:
+                        scope[key] = [scope[key], value]
+                else:
+                    scope[key] = value
 
         return cls(
             name=name,
