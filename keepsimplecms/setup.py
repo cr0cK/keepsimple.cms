@@ -4,7 +4,14 @@ from keepsimplecms.models import Route, View as ViewModel
 from keepsimplecms.view import View
 
 def declare_routes(DBSession, config):
-    views = DBSession.query(ViewModel).filter(ViewModel.type == 'View').all()
+    # retrieve routes
+    routes = DBSession.query(Route).all()
+
+    # retrieve views of all routes
+    routes_views = [route.view for route in routes]
+    views = DBSession.query(ViewModel) \
+        .filter(ViewModel.name.in_(routes_views)) \
+        .all()
 
     # create views
     indexed_views = {}
