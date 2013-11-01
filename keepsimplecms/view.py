@@ -105,7 +105,7 @@ class Node(object):
 
             view.scope('key')                  # get
             view.scope('key', 'value')         # set
-            view.scope([{'key', 'value'},])    # set multiple values
+            view.scope({'key': 'value'})       # set multiple values
 
         """
         # return all the scope
@@ -143,25 +143,25 @@ class Node(object):
         Render all nodes saved as private attributes in the scope.
 
         """
-        def _render(node_name):
+        def _instanciate(node_name):
             # retrieve the views
             view_model = self.session.query(ViewModel).filter(
                 ViewModel.name == node_name).first()
 
             # save the node content in the scope
-            return Node.create_from_model(view_model)()
+            return Node.create_from_model(view_model)
 
         # instanciate private attributes to nodes
         for attribute, node_name in self.scope().items():
             # if the attribute is not private, continue
-            if not attribute.startswith('_'):
+            if not attribute.startswith('__'):
                 continue
 
-            key = attribute[1:]
+            key = attribute[2:]
             if isinstance(node_name, list):
-                self.scope(key, [_render(node) for node in node_name])
+                self.scope(key, [_instanciate(node) for node in node_name])
             else:
-                self.scope(key, _render(node_name))
+                self.scope(key, _instanciate(node_name))
 
         self._register_methods_in_scope()
         self._render()
@@ -179,7 +179,7 @@ class Node(object):
 
         """
         # url generating
-        self.scope('route_url', self.route_url)
+        self.scope('_url', self.route_url)
 
     def _render(self):
         """
@@ -220,7 +220,7 @@ class Node(object):
                 value = value_.value
 
                 if value_.type.name == 'node':
-                    key = '_' + key
+                    key = '__' + key
 
                 # if the key is already defined, append value into a list
                 if key in scope:

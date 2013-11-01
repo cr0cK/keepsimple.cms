@@ -10,31 +10,42 @@ import types
 env = Environment()
 
 
-def global_node(node_value, indent=0, indent_first=False):
+def global_node(node, indent=0, indent_first=False):
     """
     Used for the inclusion of a node (or several nodes) in a template by
     indenting and flagging the HTML string as safe.
     """
-    if not node_value:
+    if not node:
         return
 
-    def render(node_value):
-        try:
-            spaces = indent * 4
-            tmpl = env.from_string(('{{ node_value | indent(%d, %s) }}' % (spaces, indent_first)))
-            html = tmpl.render(node_value=node_value)
-        except AttributeError:
-            html = node_value
+    def info(node):
+        """
+        Display some information about a node.
+        """
+        attrs = ['name', 'template']
+        infos = []
+        for attr in attrs:
+            infos.append('%s: %s' % (attr, getattr(node, attr)))
+        return '<!--\n' + "\n".join(infos) + '\n-->\n'
+
+    def render(node):
+        """
+        Return the node as HTML.
+        """
+        spaces = indent * 4
+        tmpl = env.from_string(('{{ content | indent(%d, %s) }}' %
+            (spaces, indent_first)))
+        content = info(node) + node()
+        html = tmpl.render(content=content)
         return html
 
     htmls = []
-    if isinstance(node_value, list):
-        htmls = [render(node) for node in node_value]
+    if isinstance(node, list):
+        htmls = [render(node_) for node_ in node]
     else:
-        htmls = [render(node_value)]
+        htmls = [render(node)]
 
     return Markup(''.join(htmls))
-
 
 def global_dump(value):
     """
@@ -52,5 +63,5 @@ for x in dir(current_module):
 
     if isinstance(x, types.FunctionType) \
         and x.__name__.startswith('global_'):
-        fn = x.__name__[len('global_'):]
+        fn = '_' + x.__name__[len('global_'):]
         functions[fn] = x
