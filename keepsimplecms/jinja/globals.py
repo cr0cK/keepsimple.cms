@@ -40,8 +40,9 @@ def global_dump(value):
     """
     Dump `value` for debugging.
     """
-    return Markup('<pre>' + pformat(value, 1, 2, 4) + '</pre>')
-
+    tmpl = env.from_string('<pre>{{ value|forceescape }}</pre>')
+    html = tmpl.render(value=pformat(value, 1, 2, 4))
+    return Markup(html)
 
 # save references to the defined functions
 functions = {}
