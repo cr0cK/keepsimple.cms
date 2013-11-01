@@ -1,19 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import transaction
 
 from sqlalchemy import engine_from_config
+from pyramid.paster import get_appsettings, setup_logging
 
-from pyramid.paster import (
-    get_appsettings,
-    setup_logging,
-    )
-
-from ..models import (
-    DBSession,
-    MyModel,
-    Base,
-    )
+from ..models import DBSession, Base
 
 
 def usage(argv):
@@ -31,7 +25,5 @@ def main(argv=sys.argv):
     settings = get_appsettings(config_uri)
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-    with transaction.manager:
-        model = MyModel(name='one', value=1)
-        DBSession.add(model)
