@@ -18,12 +18,8 @@ def declare_routes(DBSession, config):
     # create views
     indexed_views = {}
     for view in views:
-        indexed_views[view.name] = View.create(
-            name=view.name,
-            template=view.template,
-            values=view.values,
-            session=DBSession,
-        )
+        indexed_views[view.name] = View.create_from_model(
+            view, session=DBSession)
 
     # add routes
     for route in DBSession.query(Route).all():

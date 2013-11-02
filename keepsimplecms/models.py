@@ -41,13 +41,15 @@ class View(Base):
     __tablename__ = 'view'
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(200), index=True)
+    name = Column(Unicode(200), unique=True)
+    ref = Column(Unicode(200), unique=True, nullable=True)
     type = Column(Unicode(100))
     template = Column(Unicode(200))
     values = relationship("ViewValue", backref="view")
 
-    def __init__(self, name, type, template):
+    def __init__(self, name, type, template, ref=None):
         self.name = name
+        self.ref = ref
         self.type = type
         self.template = template
 

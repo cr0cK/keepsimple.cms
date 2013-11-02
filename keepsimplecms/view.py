@@ -10,6 +10,7 @@ from pyramid.renderers import (render as py_render,
 from pyramid.url import route_url as py_route_url
 
 from keepsimplecms.models import View as ViewModel
+from keepsimplecms.exceptions import ViewException
 
 
 def dynamic_import(class_name):
@@ -72,17 +73,22 @@ class Node(object):
 
     """
     name         = None
+    ref          = None
     template     = None
     _scope       = {}
     _placeholder = {}
 
-    def __init__(self, name, template, scope=None):
+    def __init__(self, name, ref, template, scope=None):
         """
         Create a new :class:`Node`.
 
         name
 
           Name of the node.
+
+        ref
+
+          Reference of the node.
 
         template
 
@@ -94,10 +100,11 @@ class Node(object):
 
         """
         self.name = name
+        self.ref = ref
         self.template = template
         self._scope = scope if scope else {}
 
-    def scope(self, *arg):
+    def scope(self, *arg, **kw):
         """
         Set values in the scope.
 
@@ -105,11 +112,12 @@ class Node(object):
 
             view.scope('key')                  # get
             view.scope('key', 'value')         # set
-            view.scope({'key': 'value'})       # set multiple values
+            view.scope(key='value')            # set multiple values
 
         """
+
         # return all the scope
-        if not len(arg):
+        if not len(arg) and not len(kw.keys()):
             return self._scope
         # return a value from the scope
         elif len(arg) == 1 and isinstance(arg[0], str):
@@ -118,8 +126,8 @@ class Node(object):
         elif len(arg) == 2:
             self._scope[arg[0]] = arg[1]
         # set value(s) to the scope
-        elif len(arg) == 1 and isinstance(arg[0], dict):
-            for key, value in arg[0].iteritems():
+        elif len(kw.keys()):
+            for key, value in kw.iteritems():
                 self._scope[key] = value
 
     @property
@@ -143,14 +151,6 @@ class Node(object):
         Render all nodes saved as private attributes in the scope.
 
         """
-        def _instanciate(node_name):
-            # retrieve the views
-            view_model = self.session.query(ViewModel).filter(
-                ViewModel.name == node_name).first()
-
-            # save the node content in the scope
-            return Node.create_from_model(view_model)
-
         # instanciate private attributes to nodes
         for attribute, node_name in self.scope().items():
             # if the attribute is not private, continue
@@ -159,12 +159,21 @@ class Node(object):
 
             key = attribute[2:]
             if isinstance(node_name, list):
-                self.scope(key, [_instanciate(node) for node in node_name])
+                self.scope(key, [self.create_from_name(node)
+                    for node in node_name])
             else:
-                self.scope(key, _instanciate(node_name))
+                self.scope(key, self.create_from_name(node_name))
 
         self._register_methods_in_scope()
         self._render()
+
+    def augments_with_ref(self, ref):
+        """
+        Merge the scope of the Node referenced by `ref` to the current scope.
+
+        """
+        node = Node.create_from_ref(ref)
+        self.scope(**node.scope())
 
     def route_url(self, route_name, *elements, **kw):
         """
@@ -198,7 +207,53 @@ class Node(object):
         return py_render(self.template, self.scope(), self.request)
 
     @classmethod
-    def create(cls, name, template, values=None, scope=None, session=None):
+    def create_from_name(cls, node_name):
+        """
+        Create a node from a its name.
+
+        """
+        view_model = cls._placeholder['session'].query(ViewModel).filter(
+            ViewModel.name == node_name).first()
+
+        if not view_model:
+            raise ViewException(
+                'The view for the node %s has not been found.' % node_name)
+
+        return cls.create_from_model(view_model)
+
+    @classmethod
+    def create_from_ref(cls, node_ref):
+        """
+        Create a node from a its reference.
+
+        """
+        view_model = cls._placeholder['session'].query(ViewModel).filter(
+            ViewModel.ref == node_ref).first()
+
+        if not view_model:
+            raise ViewException(
+                'The view for the node %s has not been found.' % node_ref)
+
+        return cls.create_from_model(view_model)
+
+    @classmethod
+    def create_from_model(cls, node_model, session=None):
+        """
+        Create a node from a model entry.
+
+        """
+        klass = dynamic_import(node_model.type)
+
+        return klass.create(
+            name=node_model.name,
+            ref=node_model.ref,
+            template=node_model.template,
+            values=node_model.values,
+            session=session
+        )
+
+    @classmethod
+    def create(cls, name, template, ref=None, values=None, scope=None, session=None):
         """
         Create a :class:`Node`.
 
@@ -233,22 +288,9 @@ class Node(object):
 
         return cls(
             name=name,
+            ref=ref,
             template=template,
             scope=scope,
-        )
-
-    @classmethod
-    def create_from_model(cls, node_model):
-        """
-        Create a node from a model entry.
-
-        """
-        klass = dynamic_import(node_model.type)
-
-        return klass.create(
-            name=node_model.name,
-            template=node_model.template,
-            values=node_model.values,
         )
 
 
@@ -262,7 +304,7 @@ class View(Node):
         Make the class as a callable function.
         Called by Pyramid when this object is used as a view.
 
-        The Pyramid context and request object are pass by Pyramid and saved
+        The Pyramid context and request objects are pass by Pyramid and saved
         in the placeholder area.
 
         Return a Pyramid response object.
