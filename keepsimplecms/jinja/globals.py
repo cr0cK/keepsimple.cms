@@ -36,8 +36,7 @@ def global_node(node, indent=0, indent_first=False):
         tmpl = env.from_string(('{{ content | indent(%d, %s) }}' %
             (spaces, indent_first)))
         content = info(node) + node()
-        html = tmpl.render(content=content)
-        return html
+        return tmpl.render(content=content)
 
     htmls = []
     if isinstance(node, list):
