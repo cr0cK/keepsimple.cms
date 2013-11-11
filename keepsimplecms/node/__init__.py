@@ -131,12 +131,12 @@ class Node(object):
         self._register_methods_in_scope()
         self._render()
 
-    def augments_with_ref(self, ref):
+    def extend(self, **kwargs):
         """
-        Merge the scope of the Node referenced by `ref` to the current scope.
+        Extend the scope of the Node with other nodes.
 
         """
-        for node in NodeFactory().create_from(ref=ref):
+        for node in NodeFactory().create_from(**kwargs):
             self.scope(**node.scope())
 
     def route_url(self, route_name, *elements, **kw):
