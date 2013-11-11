@@ -1,42 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import logging
-log = logging.getLogger(__name__)
-
-import importlib
-
 from pyramid.renderers import (render as py_render,
                               render_to_response as py_render_to_response)
 from pyramid.url import route_url as py_route_url
 
-from keepsimplecms.models import View as ViewModel
-from keepsimplecms.exceptions import ViewException
-
-
-def dynamic_import(class_name):
-    """
-    Import dynamically a class in a module.
-
-    class_name
-
-      Name of the class.
-
-    """
-    parts = class_name.split('.')
-    class_name = parts.pop()
-
-    if len(parts):
-        try:
-            module_path = '.'.join(parts)
-            mod = importlib.import_module(module_path)
-            klass = getattr(mod, class_name)
-        except AttributeError:
-            raise Exception('The %s has not been found in the module %s.' % (
-                class_name, mod.__name__))
-    else:
-        klass = eval(class_name)
-
-    return klass
+from keepsimplecms.node.factory import NodeFactory
+from keepsimplecms.utils import PlaceHolder
 
 
 class Node(object):
@@ -67,16 +36,11 @@ class Node(object):
       Dictionary passed to the template.
       See :meth:`scope` to get and set values.
 
-    _placeholder
-
-      Dictionary used to store context, request and session objects.
-
     """
     name         = None
     ref          = None
     template     = None
     _scope       = {}
-    _placeholder = {}
 
     def __init__(self, name, ref, template, scope=None):
         """
@@ -136,7 +100,7 @@ class Node(object):
         Return the session object.
 
         """
-        return self._placeholder['session']
+        return PlaceHolder.get('session')
 
     @property
     def request(self):
@@ -144,7 +108,7 @@ class Node(object):
         Return the request object.
 
         """
-        return self._placeholder['request']
+        return PlaceHolder.get('request')
 
     def render(self):
         """
@@ -159,10 +123,10 @@ class Node(object):
 
             key = attribute[2:]
             if isinstance(node_name, list):
-                self.scope(key, [self.create_from_name(node)
-                    for node in node_name])
+                self.scope(key, [NodeFactory().create_from(name=name)
+                    for name in node_name])
             else:
-                self.scope(key, self.create_from_name(node_name))
+                self.scope(key, NodeFactory().create_from(name=node_name))
 
         self._register_methods_in_scope()
         self._render()
@@ -172,8 +136,8 @@ class Node(object):
         Merge the scope of the Node referenced by `ref` to the current scope.
 
         """
-        node = Node.create_from_ref(ref)
-        self.scope(**node.scope())
+        for node in NodeFactory().create_from(ref=ref):
+            self.scope(**node.scope())
 
     def route_url(self, route_name, *elements, **kw):
         """
@@ -207,53 +171,7 @@ class Node(object):
         return py_render(self.template, self.scope(), self.request)
 
     @classmethod
-    def create_from_name(cls, node_name):
-        """
-        Create a node from a its name.
-
-        """
-        view_model = cls._placeholder['session'].query(ViewModel).filter(
-            ViewModel.name == node_name).first()
-
-        if not view_model:
-            raise ViewException(
-                'The view for the node %s has not been found.' % node_name)
-
-        return cls.create_from_model(view_model)
-
-    @classmethod
-    def create_from_ref(cls, node_ref):
-        """
-        Create a node from a its reference.
-
-        """
-        view_model = cls._placeholder['session'].query(ViewModel).filter(
-            ViewModel.ref == node_ref).first()
-
-        if not view_model:
-            raise ViewException(
-                'The view for the node %s has not been found.' % node_ref)
-
-        return cls.create_from_model(view_model)
-
-    @classmethod
-    def create_from_model(cls, node_model, session=None):
-        """
-        Create a node from a model entry.
-
-        """
-        klass = dynamic_import(node_model.type)
-
-        return klass.create(
-            name=node_model.name,
-            ref=node_model.ref,
-            template=node_model.template,
-            values=node_model.values,
-            session=session
-        )
-
-    @classmethod
-    def create(cls, name, template, ref=None, values=None, scope=None, session=None):
+    def create(cls, name, template, ref=None, values=None, scope=None):
         """
         Create a :class:`Node`.
 
@@ -264,9 +182,6 @@ class Node(object):
         build the entire page.
 
         """
-        if session:
-            cls._placeholder['session'] = session
-
         # save values from the model into the scope
         scope = scope or {}
         if values:
@@ -310,8 +225,8 @@ class View(Node):
         Return a Pyramid response object.
 
         """
-        self._placeholder['context'] = context
-        self._placeholder['request'] = request
+        PlaceHolder.set('context', context)
+        PlaceHolder.set('request', request)
 
         self.render()
 

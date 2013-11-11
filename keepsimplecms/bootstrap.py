@@ -1,28 +1,30 @@
-import re
-
-from keepsimplecms.models import Route, View as ViewModel
-from keepsimplecms.view import View
+from keepsimplecms.models import (Route,
+                                  View as ViewModel)
+from keepsimplecms.node import View
+from keepsimplecms.node.factory import NodeFactory
+from keepsimplecms.utils import PlaceHolder
 from keepsimplecms.exceptions import SetupException
 
 
-def declare_routes(DBSession, config):
+def declare_routes(config):
+    session = PlaceHolder.get('session')
+
     # retrieve routes
-    routes = DBSession.query(Route).all()
+    routes = session.query(Route).all()
 
     # retrieve views of all routes
     routes_views = [route.view for route in routes]
-    views = DBSession.query(ViewModel) \
+    views = session.query(ViewModel) \
         .filter(ViewModel.name.in_(routes_views)) \
         .all()
 
     # create views
     indexed_views = {}
     for view in views:
-        indexed_views[view.name] = View.create_from_model(
-            view, session=DBSession)
+        indexed_views[view.name] = NodeFactory().create_from_model(view)
 
     # add routes
-    for route in DBSession.query(Route).all():
+    for route in session.query(Route).all():
         try:
             view = indexed_views[route.view]
         except KeyError, e:
@@ -48,11 +50,11 @@ def declare_routes(DBSession, config):
         indexed_views[name] = View.create(
             name=name,
             template=params['template'],
-            scope={'layout': 'templates/layouts/backoffice/base.html'},
-            session=DBSession,
+            scope={'layout': 'templates/layouts/backoffice/base.html'}
         )
 
         # split on upper case chars
+        import re
         route_name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
 
         config.add_route(
@@ -61,5 +63,6 @@ def declare_routes(DBSession, config):
             view=indexed_views[name]
         )
 
-        config.add_static_view('static/backoffice', 'backoffice:static/backoffice', cache_max_age=3600)
+        config.add_static_view('static/backoffice',
+            'backoffice:static/backoffice', cache_max_age=3600)
 
