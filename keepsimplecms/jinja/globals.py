@@ -9,13 +9,12 @@ import types
 
 env = Environment()
 
-
-def global_node(node, indent=0, indent_first=False):
+def global_node(nodefactory, indent=0, indent_first=False):
     """
     Used for the inclusion of a node (or several nodes) in a template by
     indenting and flagging the HTML string as safe.
     """
-    if not node:
+    if not nodefactory:
         return
 
     def info(node):
@@ -38,12 +37,7 @@ def global_node(node, indent=0, indent_first=False):
         content = info(node) + node()
         return tmpl.render(content=content)
 
-    htmls = []
-    if isinstance(node, list):
-        htmls = [render(node_) for node_ in node]
-    else:
-        htmls = [render(node)]
-
+    htmls = [render(node) for node in nodefactory()]
     return Markup(''.join(htmls))
 
 def global_dump(value):

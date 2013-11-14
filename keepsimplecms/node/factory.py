@@ -33,38 +33,56 @@ def _import(class_name):
 
 
 class NodeFactory(object):
+    """
+    Factory which returns :class:`Node` objects.
+
+    """
     _query = None
+    _nodes = None
 
-    def create_from(self, **kwargs):
+    def create_from(self, **kw):
         """
-        Factory which returns :class:`Node` objects from a node attribute.
-
-        """
-        self._query = PlaceHolder.get('session').query(ViewModel)
-
-        valid_attributes = ('name', 'ref', 'type')
-        filters = {}
-        for attr, value in kwargs.items():
-            if attr not in valid_attributes:
-                raise ViewException('%s must be one of these attributes: %s',
-                    attr, (', '.join(valid_attributes)))
-
-            self._query = self._query.filter(getattr(ViewModel, attr) == value)
-
-        return [self.create_from_model(view_model) for view_model in list(self._query)]
-
-    @classmethod
-    def create_from_model(cls, node_model):
-        """
-        Create a node from a model entry.
+        Save the query to create nodes from kwargs.
 
         """
-        cls_ = _import(node_model.type)
+        if 'model' in kw:
+            self._nodes = self._create_from_model(kw.get('model'))
 
-        return cls_.create(
+        else:
+            self._query = PlaceHolder.get('session').query(ViewModel)
+            valid_attributes = ('name', 'ref', 'type', 'model')
+            filters = {}
+
+            for attr, value in kw.items():
+                if attr not in valid_attributes:
+                    raise ViewException('%s must be one of these attributes: %s',
+                        attr, (', '.join(valid_attributes)))
+
+                self._query = self._query.filter(getattr(ViewModel, attr) == value)
+
+        return self
+
+    def __call__(self):
+        """
+        Execute the query, save nodes and return them.
+
+        """
+        if not self._nodes:
+            self._nodes = [self._create_from_model(model)
+                            for model in list(self._query)]
+
+        return self._nodes
+
+    def _create_from_model(self, node_model):
+        """
+        Instanciate a node from a model.
+
+        """
+        node_type = _import(node_model.type)
+
+        return node_type.create(
             name=node_model.name,
             ref=node_model.ref,
             template=node_model.template,
             values=node_model.values
         )
-

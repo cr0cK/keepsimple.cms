@@ -116,17 +116,13 @@ class Node(object):
 
         """
         # instanciate private attributes to nodes
-        for attribute, node_name in self.scope().items():
-            # if the attribute is not private, continue
+        for attribute, node_name in self._scope.items():
+            # if the attribute is not private (== a node), continue
             if not attribute.startswith('__'):
                 continue
 
             key = attribute[2:]
-            if isinstance(node_name, list):
-                self.scope(key, [NodeFactory().create_from(name=name)
-                    for name in node_name])
-            else:
-                self.scope(key, NodeFactory().create_from(name=node_name))
+            self.scope(key, NodeFactory().create_from(name=node_name))
 
         self._register_methods_in_scope()
         self._render()
@@ -136,7 +132,7 @@ class Node(object):
         Extend the scope of the Node with other nodes.
 
         """
-        for node in NodeFactory().create_from(**kwargs):
+        for node in NodeFactory().create_from(**kwargs)():
             self.scope(**node.scope())
 
     def route_url(self, route_name, *elements, **kw):
