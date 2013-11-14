@@ -39,6 +39,8 @@ class NodeFactory(object):
     """
     _query = None
     _nodes = None
+    _filter_fn = None
+    _sorted_fn = None
 
     def create_from(self, **kw):
         """
@@ -62,17 +64,6 @@ class NodeFactory(object):
 
         return self
 
-    def __call__(self):
-        """
-        Execute the query, save nodes and return them.
-
-        """
-        if not self._nodes:
-            self._nodes = [self._create_from_model(model)
-                            for model in list(self._query)]
-
-        return self._nodes
-
     def _create_from_model(self, node_model):
         """
         Instanciate a node from a model.
@@ -86,3 +77,36 @@ class NodeFactory(object):
             template=node_model.template,
             values=node_model.values
         )
+
+    def filter(self, fn):
+        """
+        Save the filter function.
+
+        """
+        self._filter_fn = fn
+        return self
+
+    def sorted(self, fn):
+        """
+        Save the sorted function.
+
+        """
+        self._sorted_fn = fn
+        return self
+
+    def __call__(self):
+        """
+        Execute the query, save nodes and return them.
+
+        """
+        if not self._nodes:
+            self._nodes = [self._create_from_model(model)
+                            for model in list(self._query)]
+
+        if self._filter_fn:
+            self._nodes = filter(self._filter_fn, self._nodes)
+
+        if self._sorted_fn:
+            self._nodes = sorted(self._nodes, key=self._sorted_fn)
+
+        return self._nodes
