@@ -18,22 +18,22 @@ def declare_routes(config):
         .filter(ViewModel.name.in_(routes_views)) \
         .all()
 
-    # create views
-    indexed_views = {}
+    # create nodess
+    nodes = {}
     for view in views:
-        indexed_views[view.name] = NodeFactory().create_from(model=view)()
+        nodes[view.name] = NodeFactory().create_from(model=view)()
 
     # add routes
     for route in session.query(Route).all():
         try:
-            view = indexed_views[route.view]
+            view = nodes[route.view]
         except KeyError, e:
             raise SetupException('The view %s has not been found.' % route.view)
 
         config.add_route(
             route.name,
             pattern=route.pattern,
-            view=indexed_views[route.view]
+            view=nodes[route.view]
         )
 
     ### Declare Backoffice views and routes
@@ -47,7 +47,7 @@ def declare_routes(config):
     }
 
     for name, params in backoffice_views.items():
-        indexed_views[name] = View.create(
+        nodes[name] = View.create(
             name=name,
             template=params['template'],
             scope={'layout': 'templates/layouts/backoffice/base.html'}
@@ -60,7 +60,7 @@ def declare_routes(config):
         config.add_route(
             route_name,
             pattern=params['pattern'],
-            view=indexed_views[name]
+            view=nodes[name]
         )
 
         config.add_static_view('static/backoffice',
