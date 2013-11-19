@@ -48,6 +48,13 @@ def global_dump(value):
     html = tmpl.render(value=pformat(value, 1, 2, 4))
     return Markup(html)
 
+def global_is_selected(bool):
+    """
+    Return 'selected' if bool is true.
+    """
+    return 'selected' if bool else ''
+
+
 # save references to the defined functions
 functions = {}
 current_module = sys.modules[__name__]
