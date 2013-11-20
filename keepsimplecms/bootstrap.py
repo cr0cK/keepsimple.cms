@@ -21,7 +21,7 @@ def declare_routes(config):
     # create nodess
     nodes = {}
     for view in views:
-        nodes[view.name] = NodeFactory().create_from(model=view)()
+        nodes[view.name] = NodeFactory().create_from(model=view)().pop()
 
     # add routes
     for route in session.query(Route).all():

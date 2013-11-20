@@ -48,7 +48,7 @@ class NodeFactory(object):
 
         """
         if 'model' in kw:
-            self._nodes = self._create_from_model(kw.get('model'))
+            self._nodes = [self._create_from_model(kw.get('model'))]
 
         else:
             self._query = PlaceHolder.get('session').query(ViewModel)
