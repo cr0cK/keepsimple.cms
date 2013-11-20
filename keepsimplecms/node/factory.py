@@ -41,6 +41,7 @@ class NodeFactory(object):
     _nodes = None
     _filter_fn = None
     _sorted_fn = None
+    _index_by = None
 
     def create_from(self, **kw):
         """
@@ -94,6 +95,14 @@ class NodeFactory(object):
         self._sorted_fn = fn
         return self
 
+    def index_by(self, value):
+        """
+        Save the value which will be used to index the nodes.
+
+        """
+        self._index_by = value
+        return self
+
     def __call__(self):
         """
         Execute the query, save nodes and return them.
@@ -108,5 +117,12 @@ class NodeFactory(object):
 
         if self._sorted_fn:
             self._nodes = sorted(self._nodes, key=self._sorted_fn)
+
+        if self._index_by:
+            indexed_nodes = {}
+            for node in self._nodes:
+                idx = node.scope(self._index_by)
+                indexed_nodes.setdefault(idx, []).append(node)
+            self._nodes = indexed_nodes
 
         return self._nodes
