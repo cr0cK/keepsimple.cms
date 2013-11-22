@@ -37,12 +37,8 @@ class Node(object):
       See :meth:`scope` to get and set values.
 
     """
-    name         = None
-    ref          = None
-    template     = None
-    _scope       = {}
 
-    def __init__(self, name, ref, template, scope=None):
+    def __init__(self, name, ref, template, scope):
         """
         Create a new :class:`Node`.
 
@@ -66,7 +62,7 @@ class Node(object):
         self.name = name
         self.ref = ref
         self.template = template
-        self._scope = scope if scope else {}
+        self._scope = scope
 
     def scope(self, *arg, **kw):
         """
@@ -138,7 +134,7 @@ class Node(object):
         Register methods of the node into the scope.
 
         """
-        # url generating
+        # url generation
         self.scope('_url', self.route_url)
 
     def _render(self):
@@ -156,40 +152,6 @@ class Node(object):
         """
         self.render()
         return py_render(self.template, self.scope(), self.request)
-
-    @classmethod
-    def create(cls, name, template, ref=None, values=None, scope=None):
-        """
-        Create a :class:`Node`.
-
-        """
-        # save values from the model into the scope
-        scope = scope or {}
-        if values:
-            for value_ in values:
-                key = value_.key
-                value = value_.value
-
-                # if the value is a node, create a NodeFactory to render it
-                # when rendering
-                if value_.type.name == 'node':
-                    value = NodeFactory().create_from(name=value)
-
-                # if the key is already defined, append value into a list
-                if key in scope:
-                    if isinstance(scope[key], list):
-                        scope[key].append(value)
-                    else:
-                        scope[key] = [scope[key], value]
-                else:
-                    scope[key] = value
-
-        return cls(
-            name=name,
-            ref=ref,
-            template=template,
-            scope=scope,
-        )
 
 
 class View(Node):

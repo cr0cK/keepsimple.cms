@@ -34,7 +34,7 @@ def _import(class_name):
 
 class NodeFactory(object):
     """
-    Factory which returns :class:`Node` objects.
+    Factory which returns :class:`Node` objects when being called.
 
     """
     _query = None
@@ -70,13 +70,32 @@ class NodeFactory(object):
         Instanciate a node from a model.
 
         """
-        node_type = _import(node_model.type)
+        # save values from the model into the scope
+        scope = {}
+        for value_ in node_model.values:
+            key = value_.key
+            value = value_.value
 
-        return node_type.create(
+            # if the value is a node, create a NodeFactory to render it
+            # when rendering
+            if value_.type.name == 'node':
+                value = NodeFactory().create_from(name=value)
+
+            # if the key is already defined, append value into a list
+            if key in scope:
+                if isinstance(scope[key], list):
+                    scope[key].append(value)
+                else:
+                    scope[key] = [scope[key], value]
+            else:
+                scope[key] = value
+
+        node_type = _import(node_model.type)
+        return node_type(
             name=node_model.name,
             ref=node_model.ref,
             template=node_model.template,
-            values=node_model.values
+            scope=scope,
         )
 
     def filter(self, fn):
