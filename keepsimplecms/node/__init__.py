@@ -112,18 +112,9 @@ class Node(object):
 
     def render(self):
         """
-        Render all nodes saved as private attributes in the scope.
+        Register helpers into the scope and call the customer render method.
 
         """
-        # instanciate private attributes to nodes
-        for attribute, node_name in self._scope.items():
-            # if the attribute is not private (== a node), continue
-            if not attribute.startswith('__'):
-                continue
-
-            key = attribute[2:]
-            self.scope(key, NodeFactory().create_from(name=node_name))
-
         self._register_methods_in_scope()
         self._render()
 
@@ -171,12 +162,6 @@ class Node(object):
         """
         Create a :class:`Node`.
 
-        Values of :class:`Node` type are saved as private attributes in the scope.
-        While rendering, these attributes will be instanciated to :class:`Node`.
-
-        Since Views are nodes, the same things happen for views which allows to
-        build the entire page.
-
         """
         # save values from the model into the scope
         scope = scope or {}
@@ -185,8 +170,10 @@ class Node(object):
                 key = value_.key
                 value = value_.value
 
+                # if the value is a node, create a NodeFactory to render it
+                # when rendering
                 if value_.type.name == 'node':
-                    key = '__' + key
+                    value = NodeFactory().create_from(name=value)
 
                 # if the key is already defined, append value into a list
                 if key in scope:
