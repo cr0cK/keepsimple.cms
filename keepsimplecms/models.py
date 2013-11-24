@@ -29,7 +29,7 @@ class Route(Base):
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(100), unique=True)
     pattern = Column(Unicode(200))
-    view = Column(Unicode(200))
+    view = Column(Unicode(200), ForeignKey('view.name'))
 
     def __init__(self, name, pattern, view):
         self.name = name
@@ -45,6 +45,7 @@ class View(Base):
     ref = Column(Unicode(200), unique=True, nullable=True)
     type = Column(Unicode(100))
     template = Column(Unicode(200))
+    route = relationship("Route")
     values = relationship("ViewValue", backref="view")
 
     def __init__(self, name, type, template, ref=None):

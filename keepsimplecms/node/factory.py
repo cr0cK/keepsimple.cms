@@ -2,6 +2,7 @@
 
 import importlib
 
+from keepsimplecms.node.route import Route
 from keepsimplecms.utils import PlaceHolder
 from keepsimplecms.models import View as ViewModel
 
@@ -76,8 +77,7 @@ class NodeFactory(object):
             key = value_.key
             value = value_.value
 
-            # if the value is a node, create a NodeFactory to render it
-            # when rendering
+            # if the value is a node, create a NodeFactory
             if value_.type.name == 'node':
                 value = NodeFactory().create_from(name=value)
 
@@ -90,12 +90,18 @@ class NodeFactory(object):
             else:
                 scope[key] = value
 
+        route = None
+        if node_model.route:
+            route_model = node_model.route[0]
+            route = Route(route_model.name, route_model.pattern)
+
         node_type = _import(node_model.type)
         return node_type(
             name=node_model.name,
             ref=node_model.ref,
             template=node_model.template,
-            scope=scope,
+            _scope=scope,
+            route=route
         )
 
     def filter(self, fn):

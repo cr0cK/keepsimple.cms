@@ -38,7 +38,7 @@ class Node(object):
 
     """
 
-    def __init__(self, name, ref, template, scope):
+    def __init__(self, **kw):
         """
         Create a new :class:`Node`.
 
@@ -59,10 +59,8 @@ class Node(object):
           Dict of values.
 
         """
-        self.name = name
-        self.ref = ref
-        self.template = template
-        self._scope = scope
+        for attr, value in kw.items():
+            setattr(self, attr, value)
 
     def scope(self, *arg, **kw):
         """
