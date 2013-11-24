@@ -38,31 +38,31 @@ def declare_routes(config):
 
     ### Declare Backoffice views and routes
 
-    backoffice_views = {
-        'BackOfficeHome': {
-            'type': 'View',
-            'template': 'templates/views/backoffice/home.html',
-            'pattern': '/backoffice'
-        }
-    }
+    # backoffice_views = {
+    #     'BackOfficeHome': {
+    #         'type': 'View',
+    #         'template': 'templates/views/backoffice/home.html',
+    #         'pattern': '/backoffice'
+    #     }
+    # }
 
-    for name, params in backoffice_views.items():
-        nodes[name] = View.create(
-            name=name,
-            template=params['template'],
-            scope={'layout': 'templates/layouts/backoffice/base.html'}
-        )
+    # for name, params in backoffice_views.items():
+    #     nodes[name] = View.create(
+    #         name=name,
+    #         template=params['template'],
+    #         scope={'layout': 'templates/layouts/backoffice/base.html'}
+    #     )
 
-        # split on upper case chars
-        import re
-        route_name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
+    #     # split on upper case chars
+    #     import re
+    #     route_name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
 
-        config.add_route(
-            route_name,
-            pattern=params['pattern'],
-            view=nodes[name]
-        )
+    #     config.add_route(
+    #         route_name,
+    #         pattern=params['pattern'],
+    #         view=nodes[name]
+    #     )
 
-        config.add_static_view('static/backoffice',
-            'backoffice:static/backoffice', cache_max_age=3600)
+    #     config.add_static_view('static/backoffice',
+    #         'backoffice:static/backoffice', cache_max_age=3600)
 
