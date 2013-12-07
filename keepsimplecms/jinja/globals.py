@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from jinja2 import Environment
-from jinja2.utils import Markup
-from pprint import pformat
 import sys
 import types
+
+from pprint import pformat
+
+from keepsimplecms.utils.format import sanitize
+from jinja2 import Environment
+from jinja2.utils import Markup
+
 
 
 env = Environment()
@@ -39,6 +43,12 @@ def global_node(nodefactory, indent=0, indent_first=False):
 
     htmls = [render(node) for node in nodefactory()]
     return Markup(''.join(htmls))
+
+def global_sanitize(str):
+    """
+    Sanitize a string.
+    """
+    return sanitize(str)
 
 def global_dump(value):
     """
