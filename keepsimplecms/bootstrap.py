@@ -18,7 +18,7 @@ def declare_routes(config):
         .filter(ViewModel.name.in_(routes_views)) \
         .all()
 
-    # create nodess
+    # create nodes
     nodes = {}
     for view in views:
         nodes[view.name] = NodeFactory().create_from(model=view)().pop()
